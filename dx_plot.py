@@ -195,12 +195,7 @@ def calc_profiles():
 
 	#sets potential to 0 V in solvent (using left / extracellular side of the membrane)
 	#--------------------------------
-	#debug
-	print data_1D
-	print data_1D[3:5]
 	offset = np.average(data_1D[10:15])
-	#debug
-	print offset
 	data_1D -= offset
 	data_2D -= offset
 
@@ -213,24 +208,16 @@ def calc_profiles():
 def write_xvg():
 
 	#open files
-	filename_xvg = os.getcwd() + '/' + str(args.output_file) + '.xvg'
+	filename_xvg = os.getcwd() + '/' + str(args.dxfilename[:-4]) + '_1D.xvg'
 	output_xvg = open(filename_xvg, 'w')
 	
 	#general header
 	output_xvg.write("# [average xvg - written by xvg_average v" + str(version_nb) + "]\n")
-	tmp_files = ""
-	for f in args.xvgfilenames:
-		tmp_files += "," + str(f)
-	output_xvg.write("# - files: " + str(tmp_files[1:]) + "\n")
-	output_xvg.write("# - skipping: " + str(args.nb_skipping) + " frames\n")
-	output_xvg.write("# - smoothing: " + str(args.nb_smoothing) + " frames\n")
-	if weight_sum > len(args.xvgfilenames):
-		output_xvg.write("# -> weight = " + str(weight_sum) + "\n")
 	
 	#xvg metadata
 	output_xvg.write("@ title \"Average xvg\"\n")
-	output_xvg.write("@ xaxis label " + str(label_xaxis) + "\n")
-	output_xvg.write("@ yaxis label " + str(label_yaxis) + "\n")
+	output_xvg.write("@ xaxis label \"z distance from bilayer center (A)\"\n")
+	output_xvg.write("@ yaxis label \"potential (V)\"\n")
 	output_xvg.write("@ autoscale ONREAD xaxes\n")
 	output_xvg.write("@ TYPE XY\n")
 	output_xvg.write("@ view 0.15, 0.15, 0.95, 0.85\n")
@@ -238,21 +225,12 @@ def write_xvg():
 	output_xvg.write("@ legend box on\n")
 	output_xvg.write("@ legend loctype view\n")
 	output_xvg.write("@ legend 0.98, 0.8\n")
-	output_xvg.write("@ legend length " + str((nb_cols-1)*2) + "\n")
-	for col_index in range(0,nb_cols-1):
-		output_xvg.write("@ s" + str(col_index) + " legend \"" + str(columns_names[col_index]) + " (avg)\"\n")
-	for col_index in range(0,nb_cols-1):
-		output_xvg.write("@ s" + str(nb_cols - 1 + col_index) + " legend \"" + str(columns_names[col_index]) + " (std)\"\n")
+	output_xvg.write("@ legend length 0\n")
+	output_xvg.write("@ s0 legend \"potential\"\n")
 	
 	#data
-	for r in range(0, nb_rows):
-		results = str(data_avg[r,0])
-		#avg
-		for col_index in range(1,nb_cols):
-			results += "	" + "{:.6e}".format(data_avg[r,col_index])
-		#std
-		for col_index in range(0,nb_cols-1):
-			results += "	" + "{:.6e}".format(data_std[r,col_index])
+	for r in range(0, len(data_1D)):
+		results = str(round(coords_z[r],2)) + "	" + "{:.6e}".format(data_1D[r])
 		output_xvg.write(results + "\n")		
 	output_xvg.close()	
 	
@@ -351,7 +329,7 @@ load_dx()
 
 print "\nCalculating profiles..."
 calc_profiles()
-#write_xvg()
+write_xvg()
 graph_profiles()
 
 #=========================================================================================
