@@ -212,7 +212,7 @@ def write_xvg():
 	output_xvg = open(filename_xvg, 'w')
 	
 	#general header
-	output_xvg.write("# [average xvg - written by xvg_average v" + str(version_nb) + "]\n")
+	output_xvg.write("# [1D average content of " + str(args.dxfilename) + " - written by dx_plot v" + str(version_nb) + "]\n")
 	
 	#xvg metadata
 	output_xvg.write("@ title \"Average xvg\"\n")
