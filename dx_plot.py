@@ -146,9 +146,39 @@ if not os.path.isfile(args.dxfilename):
 	print "Error: file " + str(args.dxfilename) + " not found."
 	sys.exit(1)
 
+if args.vmin > args.vmax:
+	print "Error: --vmin must be smaller than --vmax."
+	sys.exit(1)
+
 if args.xmin < 0:
+	print "Error: --xmin must be > 0."
+	sys.exit(1)
+if args.ymin < 0:
+	print "Error: --ymin must be > 0."
+	sys.exit(1)
+if args.zmin < 0:
+	print "Error: --zmin must be > 0."
+	sys.exit(1)
+
+if args.xmax > 100:
+	print "Error: --xmax must be < 100."
+	sys.exit(1)
+if args.ymax > 100:
+	print "Error: --ymax must be < 100."
+	sys.exit(1)
+if args.zmax > 100:
+	print "Error: --zmax must be < 100."
+	sys.exit(1)
 
 if args.xmin > args.xmax:
+	print "Error: --xmin must be smaller than --xmax."
+	sys.exit(1)
+if args.ymin > args.ymax:
+	print "Error: --ymin must be smaller than --ymax."
+	sys.exit(1)
+if args.zmin > args.zmax:
+	print "Error: --zmin must be smaller than --zmax."
+	sys.exit(1)
 
 ##########################################################################################
 # FUNCTIONS DEFINITIONS
