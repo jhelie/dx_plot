@@ -45,6 +45,7 @@ Option	      Default  	Description
 -s		[xz]	: axes of slice for 2D graphs (xz,yz or xy)
 --vmax			: upper limit of scale
 --vmin			: lower limit of scale
+--pmepot		: use this flag to convert units from PMEPot to V
 
 Volume to process
 -----------------------------------------------------
@@ -54,6 +55,11 @@ Volume to process
 --xmax		[100]	: position of upper delimiter on the x axis (as a %)
 --ymax		[100]	: position of upper delimiter on the y axis (as a %)
 --zmax		[100]	: position of upper delimiter on the z axis (as a %)
+
+Potential reference
+-----------------------------------------------------
+-r		[z]	: the potential will be set to 0 at the lower extremity of this axis (x,y or z)
+--pad		[5]	: nb of slices used to calculate potential offset (set to 0 to not offset)
 
 Other options
 -----------------------------------------------------
@@ -68,6 +74,7 @@ parser.add_argument('-a', dest='axis1D', choices=['x','y','z'], default='z', hel
 parser.add_argument('-s', dest='axis2D', choices=['xz','yz','xy'], default='xz', help=argparse.SUPPRESS)
 parser.add_argument('--vmax', nargs=1, dest='vmax', default=['auto'], help=argparse.SUPPRESS)
 parser.add_argument('--vmin', nargs=1, dest='vmin', default=['auto'], help=argparse.SUPPRESS)
+parser.add_argument('--pmepot', dest='pmepot', action='store_true', help=argparse.SUPPRESS)
 
 #volume to process
 parser.add_argument('--xmin', dest='xmin', default=[0], type=float, help=argparse.SUPPRESS)
@@ -76,6 +83,10 @@ parser.add_argument('--zmin', dest='zmin', default=[0], type=float, help=argpars
 parser.add_argument('--xmax', dest='xmax', default=[100], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--ymax', dest='ymax', default=[100], type=float, help=argparse.SUPPRESS)
 parser.add_argument('--zmax', dest='zmax', default=[100], type=float, help=argparse.SUPPRESS)
+
+#potential reference
+parser.add_argument('-r', dest='axisref', choices=['x','y','z'], default='z', help=argparse.SUPPRESS)
+parser.add_argument('--pad', nargs=1, dest='pad', default=[5], type=int, help=argparse.SUPPRESS)
 
 #other options
 parser.add_argument('--version', action='version', version='%(prog)s v' + version_nb, help=argparse.SUPPRESS)
@@ -95,6 +106,7 @@ args.zmin = args.zmin[0]
 args.xmax = args.xmax[0]
 args.ymax = args.ymax[0]
 args.zmax = args.zmax[0]
+args.pad = args.pad[0]
 
 #=========================================================================================
 # import modules (doing it now otherwise might crash before we can display the help menu!)
@@ -150,6 +162,10 @@ if args.vmin > args.vmax:
 	print "Error: --vmin must be smaller than --vmax."
 	sys.exit(1)
 
+if args.pad < 0:
+	print "Error: --pad cannot be negative. Set it to 0 to avoid offsetting the potential."
+	sys.exit(1)
+
 if args.xmin < 0:
 	print "Error: --xmin must be > 0."
 	sys.exit(1)
@@ -191,6 +207,12 @@ global data_2D
 global coords_x
 global coords_y
 global coords_z
+global nx_min
+global ny_min
+global nz_min
+global nx_max
+global ny_max
+global nz_max
 
 #=========================================================================================
 # data loading
@@ -203,6 +225,12 @@ def load_dx():
 	global coords_x
 	global coords_y
 	global coords_z
+	global nx_min
+	global ny_min
+	global nz_min
+	global nx_max
+	global ny_max
+	global nz_max
 
 	#potential value in each voxel
 	g = MDAnalysis.analysis.density.Grid()
@@ -223,9 +251,18 @@ def load_dx():
 		coords_y[ny] = (tmp_y[ny+1] + tmp_y[ny])/float(2)
 	for nz in range(0,dims[2]):
 		coords_z[nz] = (tmp_z[nz+1] + tmp_z[nz])/float(2)
-
 	
-	#center z coordinate around box center
+	#calculate delimiting indexes
+	nx_min = int(args.xmin * dims[0] / float(100))
+	ny_min = int(args.ymin * dims[1] / float(100))
+	nz_min = int(args.zmin * dims[2] / float(100))
+	nx_max = int(args.xmax * dims[0] / float(100))
+	ny_max = int(args.ymax * dims[1] / float(100))
+	nz_max = int(args.zmax * dims[2] / float(100))
+	
+	#center coordinates
+	coords_x -= np.average(coords_x)
+	coords_y -= np.average(coords_y)
 	coords_z -= np.average(coords_z)
 	
 	return
@@ -239,31 +276,56 @@ def calc_profiles():
 	global data_1D
 	global data_2D
 	
-	# 1D average: along z
-	#--------------------
-	data_1D = np.zeros(dims[2])
-	for nz in range(0,dims[2]):
-		data_1D[nz] = np.average(data[:,:,nz])
+	# 1D average along chosen axis
+	#-----------------------------
+	if args.a == "x":
+		data_1D = np.zeros(nx_max-nx_min)
+		for nx in range(nx_min,nx_max):
+			data_1D[nx] = np.average(data[nx,ny_min:ny_max,nz_min:nz_max])
+	elif args.a == "y":
+		data_1D = np.zeros(ny_max-ny_min)
+		for ny in range(ny_min,ny_max):
+			data_1D[ny] = np.average(data[nx_min:nx_max,ny,nz_min:nz_max])
+	else:
+		data_1D = np.zeros(nz_max-nz_min)
+		for nz in range(nz_min,nz_max):
+			data_1D[nz] = np.average(data[nx_min:nx_max,ny_min:ny_max,nz])
 
-	# 2D average: z versus x
-	#-----------------------
-	data_2D = np.zeros((dims[0],dims[2]))
-	for nz in range(0,dims[2]):
-		for nx in range(0,dims[0]):
-			data_2D[nx,nz] = np.average(data[nx,:,nz])
-	
+	# 2D average
+	#-----------
+	#case: xz
+	if args.s == "xz":
+		data_2D = np.zeros((nx_max-nx_min,nz_max-nz_min))
+		for nz in range(nz_min,nz_max):
+			for nx in range(nx_min,nx_max):
+				data_2D[nx,nz] = np.average(data[nx,ny_min:ny_max,nz])
+	#case: yz
+	elif args.s == "yz":
+		data_2D = np.zeros((ny_max-ny_min,nz_max-nz_min))
+		for nz in range(nz_min,nz_max):
+			for nx in range(ny_min,ny_max):
+				data_2D[nx,nz] = np.average(data[nx_min:nx_max,ny,nz])
+	#case: xy
+	else:
+		data_2D = np.zeros((nx_max-nx_min,ny_max-ny_min))
+		for ny in range(ny_min,ny_max):
+			for nx in range(ny_min,ny_max):
+				data_2D[nx,nz] = np.average(data[nx,ny,nz_min:mz_max])
+		
 	#convert units to V
 	#------------------
-	#convert to kT to kJ (in PMEpot C++ code a temperature of 300 K is used to obtain kT)
-	factor = 8.3144621 * 300 / float(1000) * 0.010364272
-	data_1D *= factor
-	data_2D *= factor
+	if args.pmepot:
+		#convert to kT to kJ (in PMEpot C++ code a temperature of 300 K is used to obtain kT)
+		factor = 8.3144621 * 300 / float(1000) * 0.010364272
+		data_1D *= factor
+		data_2D *= factor
 
-	#sets potential to 0 V in solvent (using left / extracellular side of the membrane)
-	#--------------------------------
-	offset = np.average(data_1D[10:15])
-	data_1D -= offset
-	data_2D -= offset
+	#sets potential to 0 V at the lower extremity of the reference axis using specified padding
+	#------------------------------------------------------------------------------------------
+	if args.pad >= 0:
+		offset = np.average(data_1D[0:args.pad])
+		data_1D -= offset
+		data_2D -= offset
 
 	return
 
