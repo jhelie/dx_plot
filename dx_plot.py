@@ -41,6 +41,19 @@ The following python modules are needed :
 Option	      Default  	Description                    
 -----------------------------------------------------
 -f			: dx file
+-a		[z]	: axis along which to produce the 1D graph (x,y or z)
+-s		[xz]	: axes of slice for 2D graphs (xz,yz or xy)
+--vmax			: upper limit of scale
+--vmin			: lower limit of scale
+
+Volume to process
+-----------------------------------------------------
+--xmin		[0]	: position of lower delimiter on the x axis (as a %)
+--ymin		[0]	: position of lower delimiter on the y axis (as a %)
+--zmin		[0]	: position of lower delimiter on the z axis (as a %)
+--xmax		[100]	: position of upper delimiter on the x axis (as a %)
+--ymax		[100]	: position of upper delimiter on the y axis (as a %)
+--zmax		[100]	: position of upper delimiter on the z axis (as a %)
 
 Other options
 -----------------------------------------------------
@@ -51,6 +64,18 @@ Other options
 
 #options
 parser.add_argument('-f', nargs=1, dest='dxfilename', help=argparse.SUPPRESS, required=True)
+parser.add_argument('-a', dest='axis1D', choices=['x','y','z'], default='z', help=argparse.SUPPRESS)
+parser.add_argument('-s', dest='axis2D', choices=['xz','yz','xy'], default='xz', help=argparse.SUPPRESS)
+parser.add_argument('--vmax', nargs=1, dest='vmax', default=['auto'], help=argparse.SUPPRESS)
+parser.add_argument('--vmin', nargs=1, dest='vmin', default=['auto'], help=argparse.SUPPRESS)
+
+#volume to process
+parser.add_argument('--xmin', dest='xmin', default=[0], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--ymin', dest='ymin', default=[0], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--zmin', dest='zmin', default=[0], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--xmax', dest='xmax', default=[100], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--ymax', dest='ymax', default=[100], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--zmax', dest='zmax', default=[100], type=float, help=argparse.SUPPRESS)
 
 #other options
 parser.add_argument('--version', action='version', version='%(prog)s v' + version_nb, help=argparse.SUPPRESS)
@@ -62,6 +87,14 @@ parser.add_argument('-h','--help', action='help', help=argparse.SUPPRESS)
 
 args = parser.parse_args()
 args.dxfilename = args.dxfilename[0]
+args.vmax = args.vmax[0]
+args.vmin = args.vmin[0]
+args.xmin = args.xmin[0]
+args.ymin = args.ymin[0]
+args.zmin = args.zmin[0]
+args.xmax = args.xmax[0]
+args.ymax = args.ymax[0]
+args.zmax = args.zmax[0]
 
 #=========================================================================================
 # import modules (doing it now otherwise might crash before we can display the help menu!)
@@ -113,6 +146,9 @@ if not os.path.isfile(args.dxfilename):
 	print "Error: file " + str(args.dxfilename) + " not found."
 	sys.exit(1)
 
+if args.xmin < 0:
+
+if args.xmin > args.xmax:
 
 ##########################################################################################
 # FUNCTIONS DEFINITIONS
