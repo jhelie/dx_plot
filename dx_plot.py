@@ -344,7 +344,12 @@ def write_xvg():
 	
 	#xvg metadata
 	output_xvg.write("@ title \"Average xvg\"\n")
-	output_xvg.write("@ xaxis label \"z distance from bilayer center (A)\"\n")
+	if args.a == "x":
+		output_xvg.write("@ xaxis label \"distance from box center along x (A)\"\n")
+	elif args.a == "y":
+		output_xvg.write("@ xaxis label \"distance from box center along y (A)\"\n")
+	else:
+		output_xvg.write("@ xaxis label \"distance from box center along z (A)\"\n")			
 	output_xvg.write("@ yaxis label \"potential (V)\"\n")
 	output_xvg.write("@ autoscale ONREAD xaxes\n")
 	output_xvg.write("@ TYPE XY\n")
@@ -357,9 +362,18 @@ def write_xvg():
 	output_xvg.write("@ s0 legend \"potential\"\n")
 	
 	#data
-	for r in range(0, len(data_1D)):
-		results = str(round(coords_z[r],2)) + "	" + "{:.6e}".format(data_1D[r])
-		output_xvg.write(results + "\n")		
+	if args.a == "x":
+		for r in range(0, len(data_1D)):
+			results = str(round(coords_x[nx_min+r],2)) + "	" + "{:.6e}".format(data_1D[r])
+			output_xvg.write(results + "\n")		
+	elif args.a == "y":
+		for r in range(0, len(data_1D)):
+			results = str(round(coords_y[ny_min+r],2)) + "	" + "{:.6e}".format(data_1D[r])
+			output_xvg.write(results + "\n")		
+	else:
+		for r in range(0, len(data_1D)):
+			results = str(round(coords_z[nz_min+r],2)) + "	" + "{:.6e}".format(data_1D[r])
+			output_xvg.write(results + "\n")		
 	output_xvg.close()	
 	
 	return
