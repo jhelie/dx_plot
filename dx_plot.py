@@ -53,6 +53,7 @@ Option	      Default  	Description
 --yticks	[7]	: nb of ticks along the plot vertical axis
 --cticks	[10]	: nb of ticks on the colour bar
 --pmepot		: use this flag to convert units from PMEPot to V
+--reverse		: reverse the z axis
 
 Volume to process
 -----------------------------------------------------
@@ -86,6 +87,7 @@ parser.add_argument('--xticks', nargs=1, dest='xticks', default=[10], type=int, 
 parser.add_argument('--yticks', nargs=1, dest='yticks', default=[7], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--cticks', nargs=1, dest='cticks', default=[10], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--pmepot', dest='pmepot', action='store_true', help=argparse.SUPPRESS)
+parser.add_argument('--reverse', dest='reverse', action='store_true', help=argparse.SUPPRESS)
 
 #volume to process
 parser.add_argument('--xmin', nargs=1, dest='xmin', default=[0], type=float, help=argparse.SUPPRESS)
@@ -284,6 +286,8 @@ def load_dx():
 	coords_x = coords_x[nx_min:nx_max]
 	coords_y = coords_y[ny_min:ny_max]
 	coords_z = coords_z[nz_min:nz_max]
+	if args.reverse:
+		coords_z *= -1
 	
 	return
 	
@@ -468,9 +472,14 @@ def graph_profile_2D():
 	ax = fig.add_subplot(111)
 	if args.axis2D == "xz":
 		data_2D_oriented = np.zeros((np.shape(data_2D)[1],np.shape(data_2D)[0]))
-		for nx in range(nx_min, nx_max):
-			for nz in range(nz_min, nz_max):
-				data_2D_oriented[nz,nx] = data_2D[nx,nz_max-1-nz]
+		if args.reverse:
+			for nx in range(nx_min, nx_max):
+				for nz in range(nz_min, nz_max):
+					data_2D_oriented[nz,nx] = data_2D[nx,nz]
+		else:
+			for nx in range(nx_min, nx_max):
+				for nz in range(nz_min, nz_max):
+					data_2D_oriented[nz,nx] = data_2D[nx,nz_max-1-nz]
 		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax, cmap = matplotlib.cm.jet_r)
 		ax.set_xlim(min(coords_x), max(coords_x))
 		ax.set_ylim(min(coords_z), max(coords_z))
@@ -478,9 +487,14 @@ def graph_profile_2D():
 		plt.ylabel('z axis ($\AA$)')
 	elif args.axis2D == "yz":
 		data_2D_oriented = np.zeros((np.shape(data_2D)[1],np.shape(data_2D)[0]))
-		for ny in range(ny_min, ny_max):
-			for nz in range(nz_min, nz_max):
-				data_2D_oriented[nz,ny] = data_2D[ny,nz_max-1-nz]
+		if args.reverse:
+			for ny in range(ny_min, ny_max):
+				for nz in range(nz_min, nz_max):
+					data_2D_oriented[nz,ny] = data_2D[ny,nz]
+		else:
+			for ny in range(ny_min, ny_max):
+				for nz in range(nz_min, nz_max):
+					data_2D_oriented[nz,ny] = data_2D[ny,nz_max-1-nz]
 		im = plt.imshow(data_2D_oriented, extent = [min(coords_y),max(coords_y),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax, cmap = matplotlib.cm.jet_r)
 		ax.set_xlim(min(coords_y), max(coords_y))
 		ax.set_ylim(min(coords_z), max(coords_z))
