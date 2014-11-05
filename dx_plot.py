@@ -44,8 +44,9 @@ The following python modules are needed :
 Option	      Default  	Description                    
 -----------------------------------------------------
 -f			: dx file
--a		[z]	: axis along which to produce the 1D graph (x,y or z)
--s		[xz]	: axes of slice for 2D graphs (xz,yz or xy)
+-o			: name of output files
+--ax		[z]	: axis along which to produce the 1D graph (x,y or z)
+--sl		[xz]	: slice plane for 2D graphs (xz,yz or xy)
 --vmax			: upper limit of scale
 --vmin			: lower limit of scale
 --xticks	[10]	: nb of ticks along the plot horizontal axis
@@ -76,8 +77,9 @@ Other options
 
 #options
 parser.add_argument('-f', nargs=1, dest='dxfilename', help=argparse.SUPPRESS, required=True)
-parser.add_argument('-a', dest='axis1D', choices=['x','y','z'], default='z', help=argparse.SUPPRESS)
-parser.add_argument('-s', dest='axis2D', choices=['xz','yz','xy'], default='xz', help=argparse.SUPPRESS)
+parser.add_argument('-o', nargs=1, dest='outfilename', default=['auto'], help=argparse.SUPPRESS)
+parser.add_argument('--ax', dest='axis1D', choices=['x','y','z'], default='z', help=argparse.SUPPRESS)
+parser.add_argument('--sl', dest='axis2D', choices=['xz','yz','xy'], default='xz', help=argparse.SUPPRESS)
 parser.add_argument('--vmax', nargs=1, dest='vmax', default=['auto'], help=argparse.SUPPRESS)
 parser.add_argument('--vmin', nargs=1, dest='vmin', default=['auto'], help=argparse.SUPPRESS)
 parser.add_argument('--xticks', nargs=1, dest='xticks', default=[10], type=int, help=argparse.SUPPRESS)
@@ -107,6 +109,7 @@ parser.add_argument('-h','--help', action='help', help=argparse.SUPPRESS)
 
 args = parser.parse_args()
 args.dxfilename = args.dxfilename[0]
+args.outfilename = args.outfilename[0]
 args.vmax = args.vmax[0]
 args.vmin = args.vmin[0]
 args.xmin = args.xmin[0]
@@ -119,6 +122,8 @@ args.pad = args.pad[0]
 args.xticks = args.xticks[0]
 args.yticks = args.yticks[0]
 args.cticks = args.cticks[0]
+if args.outfilename == "auto":
+	args.outfilename = args.dxfilename[:-3]
 
 #=========================================================================================
 # import modules (doing it now otherwise might crash before we can display the help menu!)
@@ -319,8 +324,8 @@ def calc_profiles():
 	elif args.axis2D == "yz":
 		data_2D = np.zeros((ny_max-ny_min,nz_max-nz_min))
 		for nz in range(nz_min,nz_max):
-			for nx in range(ny_min,ny_max):
-				data_2D[nx,nz] = np.average(data[nx_min:nx_max,ny,nz])
+			for ny in range(ny_min,ny_max):
+				data_2D[ny,nz] = np.average(data[nx_min:nx_max,ny,nz])
 	#case: xy
 	else:
 		data_2D = np.zeros((nx_max-nx_min,ny_max-ny_min))
@@ -363,7 +368,7 @@ def calc_profiles():
 def write_xvg():
 
 	#open files
-	filename_xvg = os.getcwd() + '/' + str(args.dxfilename[:-4]) + '_1D.xvg'
+	filename_xvg = os.getcwd() + '/' + str(args.outfilename) + '_1D_' + str(args.axis1D) + '.xvg'
 	output_xvg = open(filename_xvg, 'w')
 	
 	#general header
@@ -409,7 +414,7 @@ def write_xvg():
 def graph_profile_1D():
 	
 	#filenames
-	filename_svg = os.getcwd() + '/' + str(args.dxfilename[:-4]) + '_1D.svg'
+	filename_svg = os.getcwd() + '/' + str(args.outfilename) + '_1D_' + str(args.axis1D) + '.svg'
 
 	#create figure
 	fig = plt.figure(figsize=(8, 6.2))
@@ -453,7 +458,7 @@ def graph_profile_1D():
 def graph_profile_2D():	
 
 	#filenames
-	filename_svg = os.getcwd() + '/' + str(args.dxfilename[:-4]) + '_2D.svg'
+	filename_svg = os.getcwd() + '/' + str(args.outfilename) + '_2D_' + str(args.axis2D) + '.svg'
 
 	#create figure
 	fig = plt.figure(figsize=(8, 6.2))
