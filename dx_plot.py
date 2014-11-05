@@ -26,6 +26,9 @@ git: https://github.com/jhelie/dx_plot
 This loads a data file containing electrostatic potential values stored in the OpenDX
 format and plots it.
 
+By default the content of the dx file is assumed to contain data in Volts (V) (or a 
+potential expressed in PMEPot units, based on kT.e-1, which can be convered to Volts
+via the --pmepot flag).
 
 [ REQUIREMENTS ]
 
@@ -45,6 +48,8 @@ Option	      Default  	Description
 -s		[xz]	: axes of slice for 2D graphs (xz,yz or xy)
 --vmax			: upper limit of scale
 --vmin			: lower limit of scale
+--xticks	[10]	: nb of ticks along the plot horizontal axis
+--yticks	[7]	: nb of ticks along the plot vertical axis
 --pmepot		: use this flag to convert units from PMEPot to V
 
 Volume to process
@@ -74,6 +79,8 @@ parser.add_argument('-a', dest='axis1D', choices=['x','y','z'], default='z', hel
 parser.add_argument('-s', dest='axis2D', choices=['xz','yz','xy'], default='xz', help=argparse.SUPPRESS)
 parser.add_argument('--vmax', nargs=1, dest='vmax', default=['auto'], help=argparse.SUPPRESS)
 parser.add_argument('--vmin', nargs=1, dest='vmin', default=['auto'], help=argparse.SUPPRESS)
+parser.add_argument('--xticks', nargs=1, dest='xticks', default=[10], type=int, help=argparse.SUPPRESS)
+parser.add_argument('--yticks', nargs=1, dest='yticks', default=[7], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--pmepot', dest='pmepot', action='store_true', help=argparse.SUPPRESS)
 
 #volume to process
@@ -107,6 +114,8 @@ args.xmax = args.xmax[0]
 args.ymax = args.ymax[0]
 args.zmax = args.zmax[0]
 args.pad = args.pad[0]
+args.xticks = args.xticks[0]
+args.yticks = args.yticks[0]
 
 #=========================================================================================
 # import modules (doing it now otherwise might crash before we can display the help menu!)
@@ -326,7 +335,7 @@ def calc_profiles():
 
 	#sets potential to 0 V at the lower extremity of the reference axis using specified padding
 	#------------------------------------------------------------------------------------------
-	if args.pad >= 0:
+	if args.pad > 0:
 		offset = np.average(data_1D[0:args.pad])
 		data_1D -= offset
 		data_2D -= offset
@@ -335,8 +344,12 @@ def calc_profiles():
 	#----------------------------------------
 	if args.vmin == "auto":
 		args.vmin = min(data_1D)
+	else:
+		args.vmin = float(args.vmin)
 	if args.vmax == "auto":
 		args.vmax = max(data_1D)
+	else:
+		args.vmax = float(args.vmax)
 
 	return
 
@@ -352,6 +365,12 @@ def write_xvg():
 	
 	#general header
 	output_xvg.write("# [1D average content of " + str(args.dxfilename) + " - written by dx_plot v" + str(version_nb) + "]\n")
+	output_xvg.write("# -> 1D axis: " + str(args.axis1D) + "\n")
+	output_xvg.write("# -> 2D axis: " + str(args.axis2D) + "\n")
+	output_xvg.write("# -> x axis: " + str(args.xmin) + "-" + str(args.xmax) + "\n")
+	output_xvg.write("# -> y axis: " + str(args.ymin) + "-" + str(args.ymax) + "\n")
+	output_xvg.write("# -> z axis: " + str(args.zmin) + "-" + str(args.zmax) + "\n")
+	output_xvg.write("# -> pad: " + str(args.pad) + " slices on " + str(args.axisref) + " axis lower extremity\n")	
 	
 	#xvg metadata
 	output_xvg.write("@ title \"Average xvg\"\n")
@@ -403,8 +422,7 @@ def graph_profile_1D():
 		plt.hlines(0, min(coords_y), max(coords_y))
 	else:
 		plt.plot(coords_z, data_1D, color = 'k', linewidth = 2)
-		plt.hlines(0, min(coords_z), max(coords_z))
-		
+		plt.hlines(0, min(coords_z), max(coords_z))	
 	plt.vlines(-21, args.vmin, args.vmax, linestyles = 'dashed')
 	plt.vlines(21, args.vmin, args.vmax, linestyles = 'dashed')
 	plt.vlines(0, args.vmin, args.vmax, linestyles = 'dashdot')
@@ -417,8 +435,8 @@ def graph_profile_1D():
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
 	ax.yaxis.set_ticks_position('left')
-	ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
-	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
+	ax.xaxis.set_major_locator(MaxNLocator(nbins=args.xticks))
+	ax.yaxis.set_major_locator(MaxNLocator(nbins=args.yticks))
 	ax.xaxis.labelpad = 20
 	ax.yaxis.labelpad = 20
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
@@ -489,8 +507,8 @@ def graph_profile_2D():
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
 	ax.yaxis.set_ticks_position('left')
-	ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
-	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
+	ax.xaxis.set_major_locator(MaxNLocator(nbins=args.xticks))
+	ax.yaxis.set_major_locator(MaxNLocator(nbins=args.yticks))
 	ax.xaxis.labelpad = 10
 	ax.yaxis.labelpad = 10
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
