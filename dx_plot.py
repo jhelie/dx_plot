@@ -265,8 +265,8 @@ def load_dx():
 	coords_y -= np.average(coords_y)
 	coords_z -= np.average(coords_z)
 	coords_x = coords_x[nx_min:nx_max]
-	coords_y = coords_x[ny_min:ny_max]
-	coords_z = coords_x[nz_min:nz_max]
+	coords_y = coords_y[ny_min:ny_max]
+	coords_z = coords_z[nz_min:nz_max]
 	
 	return
 	
@@ -294,13 +294,6 @@ def calc_profiles():
 		data_1D = np.zeros(nz_max-nz_min)
 		for nz in range(nz_min,nz_max):
 			data_1D[nz] = np.average(data[nx_min:nx_max,ny_min:ny_max,nz])
-
-	#set upper an lower boundaries if need be
-	#----------------------------------------
-	if args.vmin == "auto":
-		args.vmin = min(data_1D)
-	if args.vmax == "auto":
-		args.vmax = max(data_1D)
 
 	# 2D average
 	#-----------
@@ -337,6 +330,13 @@ def calc_profiles():
 		offset = np.average(data_1D[0:args.pad])
 		data_1D -= offset
 		data_2D -= offset
+
+	#set upper an lower boundaries if need be
+	#----------------------------------------
+	if args.vmin == "auto":
+		args.vmin = min(data_1D)
+	if args.vmax == "auto":
+		args.vmax = max(data_1D)
 
 	return
 
@@ -384,10 +384,7 @@ def write_xvg():
 	
 	return
 
-def graph_profiles():
-
-	#1D profile
-	#----------
+def graph_profile_1D():
 	
 	#filenames
 	filename_svg = os.getcwd() + '/' + str(args.dxfilename[:-4]) + '_1D.svg'
@@ -430,10 +427,10 @@ def graph_profiles():
 	fig.savefig(filename_svg)
 	plt.close()
 
+	return
 
-	#2D profile
-	#----------
-	
+def graph_profile_2D():	
+
 	#filenames
 	filename_svg = os.getcwd() + '/' + str(args.dxfilename[:-4]) + '_2D.svg'
 
@@ -451,6 +448,8 @@ def graph_profiles():
 		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax)
 		ax.set_xlim(min(coords_x), max(coords_x))
 		ax.set_ylim(min(coords_z), max(coords_z))
+		plt.xlabel('x axis ($\AA$)')
+		plt.ylabel('z axis ($\AA$)')
 	elif args.axis2D == "yz":
 		data_2D_oriented = np.zeros((np.shape(data_2D)[1],np.shape(data_2D)[0]))
 		for ny in range(ny_min, ny_max):
@@ -459,6 +458,8 @@ def graph_profiles():
 		im = plt.imshow(data_2D_oriented, extent = [min(coords_y),max(coords_y),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax)
 		ax.set_xlim(min(coords_y), max(coords_y))
 		ax.set_ylim(min(coords_z), max(coords_z))
+		plt.xlabel('y axis ($\AA$)')
+		plt.ylabel('z axis ($\AA$)')
 	else:
 		data_2D_oriented = np.zeros((np.shape(data_2D)[1],np.shape(data_2D)[0]))
 		for nx in range(nx_min, nx_max):
@@ -467,30 +468,31 @@ def graph_profiles():
 		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_y),max(coords_y)], vmin = args.vmin, vmax = args.vmax)
 		ax.set_xlim(min(coords_x), max(coords_x))
 		ax.set_ylim(min(coords_y), max(coords_y))
+		plt.xlabel('x axis ($\AA$)')
+		plt.ylabel('y axis ($\AA$)')
 
 	if args.axis2D != "xy":
 		plt.vlines(-21, args.vmin, args.vmax, linestyles = 'dashed')
 		plt.vlines(21, args.vmin, args.vmax, linestyles = 'dashed')
 		plt.vlines(0, args.vmin, args.vmax, linestyles = 'dashdot')
-		plt.xlabel('z distance to box center ($\AA$)')
-		plt.ylabel(str(args.axis1D) + ' axis ($\AA$)')
 	
 	#color bar
-	cax = fig.add_axes([0.85, 0.26, 0.025, 0.48])
+	cax = fig.add_axes([0.83, 0.2, 0.025, 0.65])
 	cbar = fig.colorbar(im, orientation='vertical', cax=cax)
 	cbar.ax.tick_params(axis='y', direction='out')
 	cbar.set_label(r'potential (V)')
-		
-	#save figure
-	
+	plt.setp(cbar.ax.yaxis.get_majorticklabels(), fontsize = "small")
+	cbar.ax.yaxis.labelpad = 10
+
+	#save figure	
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
 	ax.yaxis.set_ticks_position('left')
 	ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
-	ax.xaxis.labelpad = 20
-	ax.yaxis.labelpad = 20
+	ax.xaxis.labelpad = 10
+	ax.yaxis.labelpad = 10
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
 	plt.setp(ax.yaxis.get_majorticklabels(), fontsize = "small")
 	plt.subplots_adjust(top = 0.9, bottom = 0.15, left = 0.1, right = 0.8)
@@ -510,7 +512,8 @@ load_dx()
 print "\nCalculating profiles..."
 calc_profiles()
 write_xvg()
-graph_profiles()
+graph_profile_1D()
+graph_profile_2D()
 
 #=========================================================================================
 # exit
