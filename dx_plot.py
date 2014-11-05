@@ -50,6 +50,7 @@ Option	      Default  	Description
 --vmin			: lower limit of scale
 --xticks	[10]	: nb of ticks along the plot horizontal axis
 --yticks	[7]	: nb of ticks along the plot vertical axis
+--cticks	[10]	: nb of ticks on the colour bar
 --pmepot		: use this flag to convert units from PMEPot to V
 
 Volume to process
@@ -81,15 +82,16 @@ parser.add_argument('--vmax', nargs=1, dest='vmax', default=['auto'], help=argpa
 parser.add_argument('--vmin', nargs=1, dest='vmin', default=['auto'], help=argparse.SUPPRESS)
 parser.add_argument('--xticks', nargs=1, dest='xticks', default=[10], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--yticks', nargs=1, dest='yticks', default=[7], type=int, help=argparse.SUPPRESS)
+parser.add_argument('--cticks', nargs=1, dest='cticks', default=[10], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--pmepot', dest='pmepot', action='store_true', help=argparse.SUPPRESS)
 
 #volume to process
-parser.add_argument('--xmin', dest='xmin', default=[0], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--ymin', dest='ymin', default=[0], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--zmin', dest='zmin', default=[0], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--xmax', dest='xmax', default=[100], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--ymax', dest='ymax', default=[100], type=float, help=argparse.SUPPRESS)
-parser.add_argument('--zmax', dest='zmax', default=[100], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--xmin', nargs=1, dest='xmin', default=[0], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--ymin', nargs=1, dest='ymin', default=[0], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--zmin', nargs=1, dest='zmin', default=[0], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--xmax', nargs=1, dest='xmax', default=[100], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--ymax', nargs=1, dest='ymax', default=[100], type=float, help=argparse.SUPPRESS)
+parser.add_argument('--zmax', nargs=1, dest='zmax', default=[100], type=float, help=argparse.SUPPRESS)
 
 #potential reference
 parser.add_argument('-r', dest='axisref', choices=['x','y','z'], default='z', help=argparse.SUPPRESS)
@@ -116,6 +118,7 @@ args.zmax = args.zmax[0]
 args.pad = args.pad[0]
 args.xticks = args.xticks[0]
 args.yticks = args.yticks[0]
+args.cticks = args.cticks[0]
 
 #=========================================================================================
 # import modules (doing it now otherwise might crash before we can display the help menu!)
@@ -463,7 +466,7 @@ def graph_profile_2D():
 		for nx in range(nx_min, nx_max):
 			for nz in range(nz_min, nz_max):
 				data_2D_oriented[nz,nx] = data_2D[nx,nz_max-1-nz]
-		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax)
+		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax, cmap = matplotlib.cm.jet_r)
 		ax.set_xlim(min(coords_x), max(coords_x))
 		ax.set_ylim(min(coords_z), max(coords_z))
 		plt.xlabel('x axis ($\AA$)')
@@ -473,7 +476,7 @@ def graph_profile_2D():
 		for ny in range(ny_min, ny_max):
 			for nz in range(nz_min, nz_max):
 				data_2D_oriented[nz,ny] = data_2D[ny,nz_max-1-nz]
-		im = plt.imshow(data_2D_oriented, extent = [min(coords_y),max(coords_y),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax)
+		im = plt.imshow(data_2D_oriented, extent = [min(coords_y),max(coords_y),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax, cmap = matplotlib.cm.jet_r)
 		ax.set_xlim(min(coords_y), max(coords_y))
 		ax.set_ylim(min(coords_z), max(coords_z))
 		plt.xlabel('y axis ($\AA$)')
@@ -483,7 +486,7 @@ def graph_profile_2D():
 		for nx in range(nx_min, nx_max):
 			for ny in range(ny_min, ny_max):
 				data_2D_oriented[ny,nx] = data_2D[nx,ny_max-1-ny]
-		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_y),max(coords_y)], vmin = args.vmin, vmax = args.vmax)
+		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_y),max(coords_y)], vmin = args.vmin, vmax = args.vmax, cmap = matplotlib.cm.jet_r)
 		ax.set_xlim(min(coords_x), max(coords_x))
 		ax.set_ylim(min(coords_y), max(coords_y))
 		plt.xlabel('x axis ($\AA$)')
@@ -500,6 +503,8 @@ def graph_profile_2D():
 	cbar.ax.tick_params(axis='y', direction='out')
 	cbar.set_label(r'potential (V)')
 	plt.setp(cbar.ax.yaxis.get_majorticklabels(), fontsize = "small")
+	cbar.locator = MaxNLocator(nbins=args.cticks)
+	cbar.update_ticks()
 	cbar.ax.yaxis.labelpad = 10
 
 	#save figure	
