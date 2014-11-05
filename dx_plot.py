@@ -264,6 +264,9 @@ def load_dx():
 	coords_x -= np.average(coords_x)
 	coords_y -= np.average(coords_y)
 	coords_z -= np.average(coords_z)
+	coords_x = coords_x[nx_min:nx_max]
+	coords_y = coords_x[ny_min:ny_max]
+	coords_z = coords_x[nz_min:nz_max]
 	
 	return
 	
@@ -275,14 +278,15 @@ def calc_profiles():
 	
 	global data_1D
 	global data_2D
+
 	
 	# 1D average along chosen axis
 	#-----------------------------
-	if args.a == "x":
+	if args.axis1D == "x":
 		data_1D = np.zeros(nx_max-nx_min)
 		for nx in range(nx_min,nx_max):
 			data_1D[nx] = np.average(data[nx,ny_min:ny_max,nz_min:nz_max])
-	elif args.a == "y":
+	elif args.axis1D == "y":
 		data_1D = np.zeros(ny_max-ny_min)
 		for ny in range(ny_min,ny_max):
 			data_1D[ny] = np.average(data[nx_min:nx_max,ny,nz_min:nz_max])
@@ -291,16 +295,23 @@ def calc_profiles():
 		for nz in range(nz_min,nz_max):
 			data_1D[nz] = np.average(data[nx_min:nx_max,ny_min:ny_max,nz])
 
+	#set upper an lower boundaries if need be
+	#----------------------------------------
+	if args.vmin == "auto":
+		args.vmin = min(data_1D)
+	if args.vmax == "auto":
+		args.vmax = max(data_1D)
+
 	# 2D average
 	#-----------
 	#case: xz
-	if args.s == "xz":
+	if args.axis2D == "xz":
 		data_2D = np.zeros((nx_max-nx_min,nz_max-nz_min))
 		for nz in range(nz_min,nz_max):
 			for nx in range(nx_min,nx_max):
 				data_2D[nx,nz] = np.average(data[nx,ny_min:ny_max,nz])
 	#case: yz
-	elif args.s == "yz":
+	elif args.axis2D == "yz":
 		data_2D = np.zeros((ny_max-ny_min,nz_max-nz_min))
 		for nz in range(nz_min,nz_max):
 			for nx in range(ny_min,ny_max):
@@ -344,12 +355,7 @@ def write_xvg():
 	
 	#xvg metadata
 	output_xvg.write("@ title \"Average xvg\"\n")
-	if args.a == "x":
-		output_xvg.write("@ xaxis label \"distance from box center along x (A)\"\n")
-	elif args.a == "y":
-		output_xvg.write("@ xaxis label \"distance from box center along y (A)\"\n")
-	else:
-		output_xvg.write("@ xaxis label \"distance from box center along z (A)\"\n")			
+	output_xvg.write("@ xaxis label \"distance from box center along " + str(args.axis1D) + " (A)\"\n")
 	output_xvg.write("@ yaxis label \"potential (V)\"\n")
 	output_xvg.write("@ autoscale ONREAD xaxes\n")
 	output_xvg.write("@ TYPE XY\n")
@@ -362,17 +368,17 @@ def write_xvg():
 	output_xvg.write("@ s0 legend \"potential\"\n")
 	
 	#data
-	if args.a == "x":
+	if args.axis1D == "x":
 		for r in range(0, len(data_1D)):
-			results = str(round(coords_x[nx_min+r],2)) + "	" + "{:.6e}".format(data_1D[r])
+			results = str(round(coords_x[r],2)) + "	" + "{:.6e}".format(data_1D[r])
 			output_xvg.write(results + "\n")		
-	elif args.a == "y":
+	elif args.axis1D == "y":
 		for r in range(0, len(data_1D)):
-			results = str(round(coords_y[ny_min+r],2)) + "	" + "{:.6e}".format(data_1D[r])
+			results = str(round(coords_y[r],2)) + "	" + "{:.6e}".format(data_1D[r])
 			output_xvg.write(results + "\n")		
 	else:
 		for r in range(0, len(data_1D)):
-			results = str(round(coords_z[nz_min+r],2)) + "	" + "{:.6e}".format(data_1D[r])
+			results = str(round(coords_z[r],2)) + "	" + "{:.6e}".format(data_1D[r])
 			output_xvg.write(results + "\n")		
 	output_xvg.close()	
 	
@@ -388,21 +394,28 @@ def graph_profiles():
 
 	#create figure
 	fig = plt.figure(figsize=(8, 6.2))
-	fig.suptitle("Electrostatic profile along z")
-
+	fig.suptitle("Electrostatic profile along " + str(args.axis1D))
+	
 	#plot data
 	ax = fig.add_subplot(111)
-	plt.plot(coords_z, data_1D, color = 'k', linewidth = 2)
-	plt.vlines(-21, min(data_1D), max(data_1D), linestyles = 'dashed')
-	plt.vlines(21, min(data_1D), max(data_1D), linestyles = 'dashed')
-	plt.vlines(0, min(data_1D), max(data_1D), linestyles = 'dashdot')
-	plt.hlines(0, min(coords_z), max(coords_z))
-	plt.xlabel('z distance to bilayer center ($\AA$)')
+	if args.axis1D == "x":
+		plt.plot(coords_x, data_1D, color = 'k', linewidth = 2)
+		plt.hlines(0, min(coords_x), max(coords_x))
+	elif args.axis1D == "y":
+		plt.plot(coords_y, data_1D, color = 'k', linewidth = 2)
+		plt.hlines(0, min(coords_y), max(coords_y))
+	else:
+		plt.plot(coords_z, data_1D, color = 'k', linewidth = 2)
+		plt.hlines(0, min(coords_z), max(coords_z))
+		
+	plt.vlines(-21, args.vmin, args.vmax, linestyles = 'dashed')
+	plt.vlines(21, args.vmin, args.vmax, linestyles = 'dashed')
+	plt.vlines(0, args.vmin, args.vmax, linestyles = 'dashdot')
+	plt.xlabel(str(args.axis1D) + ' distance to box center ($\AA$)')
 	plt.ylabel('electrostatic potential (V)')
 	
 	#save figure
-	ax.set_xlim(min(coords_z), max(coords_z))
-	#ax.set_ylim(min_density_charges, max_density_charges)
+	ax.set_ylim(args.vmin, args.vmax)
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
@@ -430,12 +443,37 @@ def graph_profiles():
 
 	#plot data
 	ax = fig.add_subplot(111)
-	im = plt.imshow(data_2D)
-	plt.vlines(-21, min(data_2D[:,0]), max(data_2D[:,0]), linestyles = 'dashed')
-	plt.vlines(21, min(data_2D[:,0]), max(data_2D[:,0]), linestyles = 'dashed')
-	plt.vlines(0, min(data_2D[:,0]), max(data_2D[:,0]), linestyles = 'dashdot')
-	plt.xlabel('z distance to bilayer center ($\AA$)')
-	plt.ylabel('x axis ($\AA$)')
+	if args.axis2D == "xz":
+		data_2D_oriented = np.zeros((np.shape(data_2D)[1],np.shape(data_2D)[0]))
+		for nx in range(nx_min, nx_max):
+			for nz in range(nz_min, nz_max):
+				data_2D_oriented[nz,nx] = data_2D[nx,nz_max-1-nz]
+		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax)
+		ax.set_xlim(min(coords_x), max(coords_x))
+		ax.set_ylim(min(coords_z), max(coords_z))
+	elif args.axis2D == "yz":
+		data_2D_oriented = np.zeros((np.shape(data_2D)[1],np.shape(data_2D)[0]))
+		for ny in range(ny_min, ny_max):
+			for nz in range(nz_min, nz_max):
+				data_2D_oriented[nz,ny] = data_2D[ny,nz_max-1-nz]
+		im = plt.imshow(data_2D_oriented, extent = [min(coords_y),max(coords_y),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax)
+		ax.set_xlim(min(coords_y), max(coords_y))
+		ax.set_ylim(min(coords_z), max(coords_z))
+	else:
+		data_2D_oriented = np.zeros((np.shape(data_2D)[1],np.shape(data_2D)[0]))
+		for nx in range(nx_min, nx_max):
+			for ny in range(ny_min, ny_max):
+				data_2D_oriented[ny,nx] = data_2D[nx,ny_max-1-ny]
+		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_y),max(coords_y)], vmin = args.vmin, vmax = args.vmax)
+		ax.set_xlim(min(coords_x), max(coords_x))
+		ax.set_ylim(min(coords_y), max(coords_y))
+
+	if args.axis2D != "xy":
+		plt.vlines(-21, args.vmin, args.vmax, linestyles = 'dashed')
+		plt.vlines(21, args.vmin, args.vmax, linestyles = 'dashed')
+		plt.vlines(0, args.vmin, args.vmax, linestyles = 'dashdot')
+		plt.xlabel('z distance to box center ($\AA$)')
+		plt.ylabel(str(args.axis1D) + ' axis ($\AA$)')
 	
 	#color bar
 	cax = fig.add_axes([0.85, 0.26, 0.025, 0.48])
@@ -444,7 +482,7 @@ def graph_profiles():
 	cbar.set_label(r'potential (V)')
 		
 	#save figure
-	ax.set_xlim(0, dims[2])
+	
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
