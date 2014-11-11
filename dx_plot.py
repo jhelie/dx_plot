@@ -535,6 +535,8 @@ def graph_profile_2D():
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=args.yticks))
 	ax.xaxis.labelpad = 10
 	ax.yaxis.labelpad = 10
+	ax.get_xaxis().set_tick_params(direction='out')
+	ax.get_yaxis().set_tick_params(direction='out')
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
 	plt.setp(ax.yaxis.get_majorticklabels(), fontsize = "small")
 	plt.subplots_adjust(top = 0.9, bottom = 0.15, left = 0.1, right = 0.8)
