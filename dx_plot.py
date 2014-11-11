@@ -215,6 +215,18 @@ if args.zmin > args.zmax:
 	print "Error: --zmin must be smaller than --zmax."
 	sys.exit(1)
 
+#create log
+#----------
+filename_log=os.getcwd() + '/' + str(args.outfilename) + '.log'
+output_log=open(filename_log, 'w')		
+output_log.write("[dx_plot v" + str(version_nb) + "]\n")
+output_log.write("\nThe dx file was rendered using the following command:\n\n")
+tmp_log="python dx_plot.py"
+for c in sys.argv[1:]:
+	tmp_log += " " + c
+output_log.write(tmp_log + "\n")
+output_log.close()
+
 ##########################################################################################
 # FUNCTIONS DEFINITIONS
 ##########################################################################################
