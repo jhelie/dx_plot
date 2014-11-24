@@ -55,6 +55,7 @@ Option	      Default  	Description
 --pmepot		: use this flag to convert units from PMEPot to V
 --reverse		: reverse the z axis
 --cmap 	['jet_r']	: color map to use
+--inter 	['none']	: interpolation to use for 2D plot
 
 Volume to process
 -----------------------------------------------------
@@ -90,6 +91,7 @@ parser.add_argument('--cticks', nargs=1, dest='cticks', default=[10], type=int, 
 parser.add_argument('--pmepot', dest='pmepot', action='store_true', help=argparse.SUPPRESS)
 parser.add_argument('--reverse', dest='reverse', action='store_true', help=argparse.SUPPRESS)
 parser.add_argument('--cmap', nargs=1, dest='cmap', default=['jet_r'], help=argparse.SUPPRESS)
+parser.add_argument('--inter', nargs=1, dest='inter', default=['none'], help=argparse.SUPPRESS)
 
 #volume to process
 parser.add_argument('--xmin', nargs=1, dest='xmin', default=[0], type=float, help=argparse.SUPPRESS)
@@ -127,6 +129,7 @@ args.xticks = args.xticks[0]
 args.yticks = args.yticks[0]
 args.cticks = args.cticks[0]
 args.cmap = args.cmap[0]
+args.inter = args.inter[0]
 if args.outfilename == "auto":
 	args.outfilename = args.dxfilename[:-3]
 
@@ -220,9 +223,14 @@ if args.zmin > args.zmax:
 
 colormaps_possible = ['Spectral', 'summer', 'coolwarm', 'pink_r', 'Set1', 'Set2', 'Set3', 'brg_r', 'Dark2', 'hot', 'PuOr_r', 'afmhot_r', 'terrain_r', 'PuBuGn_r', 'RdPu', 'gist_ncar_r', 'gist_yarg_r', 'Dark2_r', 'YlGnBu', 'RdYlBu', 'hot_r', 'gist_rainbow_r', 'gist_stern', 'gnuplot_r', 'cool_r', 'cool', 'gray', 'copper_r', 'Greens_r', 'GnBu', 'gist_ncar', 'spring_r', 'gist_rainbow', 'RdYlBu_r', 'gist_heat_r', 'OrRd_r', 'CMRmap', 'bone', 'gist_stern_r', 'RdYlGn', 'Pastel2_r', 'spring', 'terrain', 'YlOrRd_r', 'Set2_r', 'winter_r', 'PuBu', 'RdGy_r', 'spectral', 'flag_r', 'jet_r', 'RdPu_r', 'Purples_r', 'gist_yarg', 'BuGn', 'Paired_r', 'hsv_r', 'bwr', 'cubehelix', 'YlOrRd', 'Greens', 'PRGn', 'gist_heat', 'spectral_r', 'Paired', 'hsv', 'Oranges_r', 'prism_r', 'Pastel2', 'Pastel1_r', 'Pastel1', 'gray_r', 'PuRd_r', 'Spectral_r', 'gnuplot2_r', 'BuPu', 'YlGnBu_r', 'copper', 'gist_earth_r', 'Set3_r', 'OrRd', 'PuBu_r', 'ocean_r', 'brg', 'gnuplot2', 'jet', 'bone_r', 'gist_earth', 'Oranges', 'RdYlGn_r', 'PiYG', 'CMRmap_r', 'YlGn', 'binary_r', 'gist_gray_r', 'Accent', 'BuPu_r', 'gist_gray', 'flag', 'seismic_r', 'RdBu_r', 'BrBG', 'Reds', 'BuGn_r', 'summer_r', 'GnBu_r', 'BrBG_r', 'Reds_r', 'RdGy', 'PuRd', 'Accent_r', 'Blues', 'Greys', 'autumn', 'cubehelix_r', 'nipy_spectral_r', 'PRGn_r', 'Greys_r', 'pink', 'binary', 'winter', 'gnuplot', 'RdBu', 'prism', 'YlOrBr', 'coolwarm_r', 'rainbow_r', 'rainbow', 'PiYG_r', 'YlGn_r', 'Blues_r', 'YlOrBr_r', 'seismic', 'Purples', 'bwr_r', 'autumn_r', 'ocean', 'Set1_r', 'PuOr', 'PuBuGn', 'nipy_spectral', 'afmhot']
 if args.cmap not in colormaps_possible:
-	print "Error: unknown color maps, matplotlib website or use default."
+	print "Error: unknown color maps, check matplotlib website or use default."
 	sys.exit(1)
 	
+interpolations_possible = ['none', 'nearest', 'bilinear', 'bicubic', 'spline16', 'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric', 'catrom', 'gaussian', 'bessel', 'mitchell', 'sinc', 'lanczos']
+if args.inter not in interpolations_possible:
+	print "Error: unknown interpolation method, check matplotlib website or use default."
+	sys.exit(1)
+
 #create log
 #----------
 filename_log=os.getcwd() + '/' + str(args.outfilename) + '.log'
@@ -504,7 +512,7 @@ def graph_profile_2D():
 			for nx in range(nx_min, nx_max):
 				for nz in range(nz_min, nz_max):
 					data_2D_oriented[nz,nx] = data_2D[nx,nz_max-1-nz]
-		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax, cmap = cmap)
+		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax, cmap = cmap, interpolation=args.inter)
 		ax.set_xlim(min(coords_x), max(coords_x))
 		ax.set_ylim(min(coords_z), max(coords_z))
 		plt.xlabel('x axis ($\AA$)')
@@ -519,7 +527,7 @@ def graph_profile_2D():
 			for ny in range(ny_min, ny_max):
 				for nz in range(nz_min, nz_max):
 					data_2D_oriented[nz,ny] = data_2D[ny,nz_max-1-nz]
-		im = plt.imshow(data_2D_oriented, extent = [min(coords_y),max(coords_y),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax, cmap = cmap)
+		im = plt.imshow(data_2D_oriented, extent = [min(coords_y),max(coords_y),min(coords_z),max(coords_z)], vmin = args.vmin, vmax = args.vmax, cmap = cmap, interpolation=args.inter)
 		ax.set_xlim(min(coords_y), max(coords_y))
 		ax.set_ylim(min(coords_z), max(coords_z))
 		plt.xlabel('y axis ($\AA$)')
@@ -529,7 +537,7 @@ def graph_profile_2D():
 		for nx in range(nx_min, nx_max):
 			for ny in range(ny_min, ny_max):
 				data_2D_oriented[ny,nx] = data_2D[nx,ny_max-1-ny]
-		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_y),max(coords_y)], vmin = args.vmin, vmax = args.vmax, cmap = cmap)
+		im = plt.imshow(data_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_y),max(coords_y)], vmin = args.vmin, vmax = args.vmax, cmap = cmap, interpolation=args.inter)
 		ax.set_xlim(min(coords_x), max(coords_x))
 		ax.set_ylim(min(coords_y), max(coords_y))
 		plt.xlabel('x axis ($\AA$)')
